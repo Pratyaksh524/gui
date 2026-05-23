@@ -1,0 +1,2 @@
+2025-06-10 09:39:57,571 - __main__ - INFO - Application initialized successfully
+2025-06-10 09:39:57,571 - __main__ - CRITICAL - Critical application error: 'SleepSensePlotWithErrorHandling' object has no attribute 'show'

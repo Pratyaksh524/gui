@@ -413,11 +413,31 @@ class SleepSensePlot(QMainWindow):
             if len(pulse) > window_size:
                 pulse = pd.Series(pulse).rolling(window=window_size, min_periods=1, center=True).mean()
             self.ax.plot(t, pulse + offset['Pulse'], label="Pulse", color="red", linewidth=2.0)
+
         if self.visible_signals.get('SpO2', False):
-            spo2 = self.spo2_n[mask] * self.scales['SpO2']
+            # Use raw SpO2 values from file
+            spo2 = self.spo2[mask] * self.scales['SpO2']
             if len(spo2) > window_size:
                 spo2 = pd.Series(spo2).rolling(window=window_size, min_periods=1, center=True).mean()
+            t_segment = t.reset_index(drop=True)
+            # Ensure lengths match
+            if len(t_segment) != len(spo2):
+                min_len = min(len(t_segment), len(spo2))
+                t_segment = t_segment.iloc[:min_len]
+                spo2 = spo2.iloc[:min_len] if isinstance(spo2, pd.Series) else spo2[:min_len]
+            # Plot the SpO2 wave (optional, remove if you only want numbers)
             self.ax.plot(t, spo2 + offset['SpO2'], label="SpO2", color="green", linewidth=2.0)
+            # Show numeric value every 10th point
+            for i in range(0, len(spo2), 20):
+                x = t_segment.iloc[i]
+                y = offset['SpO2'] + 0.1  # Fixed band
+                self.ax.text(
+                    x, y,
+                    f"{spo2.iloc[i]:.0f}",
+                    fontsize=10, color="green", rotation=45,
+                    ha='center', va='bottom'
+                )
+
         if self.visible_signals.get('Airflow', False):
             flow = self.flow_n[mask] * self.scales['Airflow']
             smooth_window = 20  # much less smoothing
@@ -425,12 +445,6 @@ class SleepSensePlot(QMainWindow):
                 flow_smooth = pd.Series(flow).rolling(window=smooth_window, min_periods=1, center=True).mean()
             else:
                 flow_smooth = flow
-
-            # Optionally skip clipping for now
-            # lower = np.percentile(flow_smooth, 1)
-            # upper = np.percentile(flow_smooth, 99)
-            # flow_smooth = np.clip(flow_smooth, lower, upper)
-
             self.ax.plot(t, flow_smooth + offset['Airflow'], label="Airflow", color="#7ec8e3", linewidth=2.0)
             
         airflow_base = 3.6
